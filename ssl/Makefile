@@ -1,4 +1,5 @@
 .PHONY: default
+.SECONDARY:
 
 CA_PASSWORD:=dev-root-password
 
@@ -7,7 +8,7 @@ default: all
 super-clean:
 	rm -rf root-ca/
 clean:
-	rm -rf root-ca/serial root-ca/certindex.txt root-ca/newcerts root-ca/certs root-ca/
+	rm -rf certs pillar
 
 root-ca/cacert.pem:
 	mkdir -p root-ca
@@ -30,4 +31,11 @@ certs/%.crt: certs/%.csr
 	mv certs/newcerts/* certs/certs
 	ln -sf certs/$$(tail -n 1 certs/certindex.txt | awk '{print $$3}').pem certs/$*.crt
 
-all: root-ca/cacert.pem root-ca/mesos.dev.vagrant.csr
+pillar/%.sls: certs/%.crt
+	mkdir -p pillar
+	echo "$*.key: |" > $@
+	cat certs/$*.key | bin/ws-indent 2 >> $@
+	echo "$*.crt: |" >> $@
+	cat certs/$*.crt | bin/ws-indent 2 >> $@
+
+all: root-ca/cacert.pem pillar/mesos.dev.vagrant.sls

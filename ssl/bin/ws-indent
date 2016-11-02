@@ -1,0 +1,18 @@
+#!/bin/bash
+
+COUNT=$1
+FILE=$2
+indent=""
+for ((n=0; n<$COUNT; n++)); do
+  indent="$indent "
+done
+
+if [ -z "$FILE" ]; then
+  while read line; do
+    echo "$indent$line"
+  done
+else
+  cat $FILE | while read line; do
+    echo "$indent$line"
+  done
+fi
