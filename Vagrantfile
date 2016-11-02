@@ -26,7 +26,7 @@ Vagrant.configure("2") do |config|
 
   # Create a private network, which allows host-only access to the machine
   # using a specific IP.
-  config.vm.network "private_network", ip: "192.168.33.10"
+  config.vm.network "private_network", ip: "192.168.33.10", :auto_config => false
 
   # Create a public network, which generally matched to bridged network.
   # Bridged networks make the machine appear as another physical device on
@@ -37,13 +37,16 @@ Vagrant.configure("2") do |config|
   # the path on the host to the actual folder. The second argument is
   # the path on the guest to mount the folder. And the optional third
   # argument is a set of non-required options.
-  # config.vm.synced_folder "../data", "/vagrant_data"
+  config.vm.synced_folder "srv/", "/srv"
 
   # Provider-specific configuration so you can fine-tune various
   # backing providers for Vagrant. These expose provider-specific options.
   # Example for VirtualBox:
   #
+  
   config.vm.provider "virtualbox" do |vb|
+    vb.customize ["modifyvm", :id, "--nictype1", "virtio"]
+    vb.customize ["modifyvm", :id, "--nictype2", "virtio"]
     # Display the VirtualBox GUI when booting the machine
     # vb.gui = true
   
@@ -85,30 +88,24 @@ Vagrant.configure("2") do |config|
   # Puppet, Chef, Ansible, Salt, and Docker are also available. Please see the
   # documentation for more information about their specific syntax and use.
   config.vm.provision "shell", inline: <<-SHELL
-    sudo tee /etc/yum.repos.d/docker.repo <<-'EOF'
-[dockerrepo]
-name=Docker Repository
-baseurl=https://yum.dockerproject.org/repo/main/centos/7/
-enabled=1
-gpgcheck=1
-gpgkey=https://yum.dockerproject.org/gpg
-EOF
-    sudo yum install -y docker-engine
-    sudo systemctl enable docker.service
-    sudo systemctl start docker
-    for disk in b c d; do
-      if [ ! -d "/mnt/disk-${disk}" ]; then
-        mkdir -p /mnt/disk-${disk}
-        mkfs.xfs /dev/sd${disk}
-        sudo tee -a /etc/fstab <<-DISK
-/dev/sd${disk} /mnt/disk-${disk} xfs rw,relatime,attr2,inode64,noquota 0 0
-        mount /mnt/disk-${disk}
-DISK
-      fi
-    done
-    curl -sSL https://minimesos.org/install | sh
-    echo 'export PATH=$PATH:/root/.minimesos/bin' >> /etc/profile.d/minimesos.sh
-    source /etc/profile.d/minimesos.sh
-    minimesos
+    sudo tee /etc/sysconfig/network-scripts/ifcfg-eth1 <<-ETH1
+NM_CONTROLLED=no
+BOOTPROTO=none
+ONBOOT=yes
+IPADDR=192.168.33.10
+NETMASK=255.255.255.0
+DEVICE=eth1
+PEERDNS=no
+ETH1
+    curl -o bootstrap_salt.sh -L https://bootstrap.saltstack.com
+    sudo sh bootstrap_salt.sh git v2015.8.10
+    sudo mkdir -p /etc/salt
+    sudo tee /etc/salt/minion <<-SALT
+file_client: local
+SALT
+    sudo tee /etc/salt/minion_id <<-SALT
+mesos
+SALT
+    salt-call state.single service.dead salt-minion enable=False
   SHELL
 end
