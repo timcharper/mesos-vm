@@ -1,46 +1,6 @@
-/etc/yum.repos.d/docker.repo:
-  file.managed:
-    - contents: |
-        [dockerrepo]
-        name=Docker Repository
-        baseurl=https://yum.dockerproject.org/repo/main/centos/7/
-        enabled=1
-        gpgcheck=1
-        gpgkey=https://yum.dockerproject.org/gpg
-
-docker-engine:
-  pkg.installed:
-    - require:
-      - file: /etc/yum.repos.d/docker.repo
-    - watch_in:
-      - cmd: daemon-reload
-  service.running:
-    - name: docker
-    - enable: True
-    - watch:
-      - pkg: docker-engine
-
-daemon-reload:
-  cmd.wait:
-    - name: |
-        systemctl daemon-reload
-
-{% for disk in ["b", "c", "d"] %}
-disk-{{disk}}:
-  cmd.run:
-    - name: |
-        mkdir -p /mnt/disk-{{disk}}
-        mkfs.xfs /dev/sd{{disk}}
-        tee -a /etc/fstab <<-DISK
-        /dev/sd${disk} /mnt/disk-{{disk}} xfs rw,relatime,attr2,inode64,noquota 0 0
-        DISK
-        mount /mnt/disk-{{disk}}
-    - unless: |
-        [ -d "/mnt/disk-{{disk}}" ]
-{% endfor %}
-
-java-1.8.0-openjdk: pkg.installed
-net-tools: pkg.installed
+include:
+  - setup.systemd
+  - setup.java
 
 /usr/local/zookeeper-3.4.9.tar.gz:
   file.managed:
@@ -77,15 +37,24 @@ net-tools: pkg.installed
     - watch_in:
       - cmd: daemon-reload
 
-/etc/zookeeper/conf: file.directory
+/etc/zookeeper/conf:
+  file.directory:
+    - makedirs: True
 /var/run/zookeeper: file.directory
 /var/log/zookeeper: file.directory
+
+/usr/local/bin/zkCli:
+  file.managed:
+    - contents: |
+        exec /usr/local/zookeeper/bin/zkCli.sh
+    - mode: 755
 
 zookeeper:
   service.running:
     - enable: True
     - require:
       - cmd: daemon-reload
+      - pkg: java
       - file: /etc/systemd/system/zookeeper.service
       - cmd: /usr/local/zookeeper-3.4.9.tar.gz
       - file: /etc/zookeeper/conf
@@ -112,6 +81,3 @@ zookeeper:
         tickTime=2000
         dataDir=/var/lib/zookeeper
         clientPort=2181
-
-jq: pkg.installed
-
