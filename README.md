@@ -34,5 +34,36 @@ salt-key -A
 salt '*' test.ping
 
 # they are? great! install all the things.
+salt '*' state.highstate
+```
+
+(didn't succeed first time? Try and apply highstate again.)
+
+Add host entries
+
+```
+sudo tee -a /etc/hosts <<-HOSTS
+192.168.33.10 mesos-1.dev.vagrant
+192.168.33.11 mesos-2.dev.vagrant
+192.168.33.12 mesos-3.dev.vagrant
+HOSTS
+```
+
+### 4) Check configuration
+
+open http://192.168.33.10:5050
+
+Click agents tab and see if the mesos slaves / agents have registered.
+
+These commands will will help you figure if things aren't working:
+
+```
+journalctl -xefu mesos-slave
+
+ping leader.mesos # return IP address of current master
+
+# (on the vm currently running the master)
+
+journalctl -xefu mesos-master
 
 ```
