@@ -7,6 +7,7 @@ base:
     - setup.network
     - setup.cacert
     - setup.jq
+    - setup.mcli
     - setup.java
     - setup.disks
     - setup.general
