@@ -4,6 +4,7 @@ base:
   '*':
     - setup.docker
     - setup.mesos
+    - setup.network
     - setup.cacert
     - setup.jq
     - setup.java

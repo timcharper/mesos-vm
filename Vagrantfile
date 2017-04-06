@@ -35,7 +35,7 @@ Vagrant.configure("2") do |top|
 
       # Create a private network, which allows host-only access to the machine
       # using a specific IP.
-      node.vm.network "private_network", ip: ip, :auto_config => false
+      node.vm.network "private_network", ip: ip
 
       # Create a public network, which generally matched to bridged network.
       # Bridged networks make the machine appear as another physical device on
@@ -46,7 +46,7 @@ Vagrant.configure("2") do |top|
       # the path on the host to the actual folder. The second argument is
       # the path on the guest to mount the folder. And the optional third
       # argument is a set of non-required options.
-      node.vm.synced_folder "srv/", "/srv"
+      node.vm.synced_folder "srv/", "/srv", type: "nfs"
 
       # Provider-specific configuration so you can fine-tune various
       # backing providers for Vagrant. These expose provider-specific options.
@@ -54,8 +54,6 @@ Vagrant.configure("2") do |top|
       #
       
       node.vm.provider "virtualbox" do |vb|
-        vb.customize ["modifyvm", :id, "--nictype1", "virtio"]
-        vb.customize ["modifyvm", :id, "--nictype2", "virtio"]
         # Display the VirtualBox GUI when booting the machine
         # vb.gui = true
         
@@ -95,18 +93,6 @@ Vagrant.configure("2") do |top|
       # Puppet, Chef, Ansible, Salt, and Docker are also available. Please see the
       # documentation for more information about their specific syntax and use.
       node.vm.provision "shell", inline: <<-SHELL
-        sudo tee /etc/sysconfig/network-scripts/ifcfg-eth1 <<-ETH1
-NM_CONTROLLED=no
-BOOTPROTO=none
-ONBOOT=yes
-IPADDR=#{ip}
-NETMASK=255.255.255.0
-DEVICE=eth1
-PEERDNS=no
-ETH1
-        rm -f /etc/sysconfig/network-scripts/ifcfg-enp0s3
-        service network restart
-
         sudo tee -a /etc/hosts <<-HOSTS
 #{ip_for 1} mesos-1.dev.vagrant
 #{ip_for 2} mesos-2.dev.vagrant

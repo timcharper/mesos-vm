@@ -87,7 +87,7 @@ mesos:
       }
     }
   ] | json,
-  "ip": grains['ip4_interfaces']['eth1'][0],
+  "ip": grains['ip4_interfaces']['enp0s8'][0],
   "hostname": grains.id,
   "switch_user": "false",
   "containerizers": "mesos,docker",
@@ -144,6 +144,9 @@ mesos-slave:
             {
               "principal": "ceph",
               "secret": "very-ceph"
+            },{
+              "principal": "marathon",
+              "secret": "very-marathon"
             },
             {
               "principal": "mesos-slave",
@@ -152,7 +155,7 @@ mesos-slave:
           ]
         }
 {% set master = {
-  "ip": grains['ip4_interfaces']['eth1'][0],
+  "ip": grains['ip4_interfaces']['enp0s8'][0],
   "hostname": grains.id,
   "authenticate_slaves": "true",
   "authenticate": "true",
