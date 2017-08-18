@@ -14,3 +14,8 @@ ntp:
       - pkg: ntp
 
 
+
+system:
+  network.system:
+    - enabled: True
+    - hostname: {{grains.id}}

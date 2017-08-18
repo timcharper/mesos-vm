@@ -8,6 +8,7 @@ mesosphere-el-repo:
       - mesosphere-el-repo: http://repos.mesosphere.com/el/7/noarch/RPMS/mesosphere-el-repo-7-1.noarch.rpm
 mesos:
   pkg.installed:
+    - version: 1.2.0-2.0.6
     - require:
       - pkg: mesosphere-el-repo
 
@@ -91,13 +92,17 @@ mesos:
   "hostname": grains.id,
   "switch_user": "false",
   "containerizers": "mesos,docker",
+  "image_providers": "APPC,DOCKER",
+  "isolation": "cgroups/cpu,cgroups/mem,docker/runtime,filesystem/linux",
   "executor_environment_variables": {
     "LIBPROCESS_SSL_KEY_FILE": "/etc/pki/tls/private/mesos.dev.vagrant.key",
     "LIBPROCESS_SSL_CERT_FILE": "/etc/pki/tls/certs/mesos.dev.vagrant.crt",
     "LIBPROCESS_SSL_CA_FILE": "/etc/pki/ca-trust/source/anchors/dev-root-ca.crt",
     "LIBPROCESS_SSL_ENABLED": "true",
     "LIBPROCESS_SSL_SUPPORT_DOWNGRADE": "true"
-  } | json
+  } | json,
+  "network_cni_config_dir": "/usr/libexec/cni/config",
+  "network_cni_plugins_dir": "/usr/libexec/cni/bin"
 } %}
 
 {% for key, value in slave.items() %}
@@ -146,6 +151,9 @@ mesos-slave:
               "secret": "very-ceph"
             },{
               "principal": "marathon",
+              "secret": "very-marathon"
+            },{
+              "principal": "dcos_marathon",
               "secret": "very-marathon"
             },
             {
@@ -215,7 +223,8 @@ mesos-master:
           "dnson": true,
           "httpport": 8123,
           "externalon": true,
-          "listener": "0.0.0.0",
+          "listener": "{{grains['ip4_interfaces']['enp0s8'][0]}}",
+          "httpListener": "{{grains['ip4_interfaces']['enp0s8'][0]}}",
           "SOAMname": "ns1.mesos",
           "SOARname": "root.ns1.mesos",
           "SOARefresh": 60,
@@ -262,4 +271,4 @@ mesos-dns:
   file.managed:
     - contents: |
         search dev.vagrant
-        nameserver 127.0.0.1
+        nameserver {{grains['ip4_interfaces']['enp0s8'][0]}}

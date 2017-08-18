@@ -1,11 +1,11 @@
-.PHONY: default
+.PHONY: default clean super-clean
 .SECONDARY:
 
 CA_PASSWORD:=dev-root-password
 
 default: all
 
-super-clean:
+super-clean: | clean
 	rm -rf root-ca/
 clean:
 	rm -rf certs pillar
@@ -47,7 +47,7 @@ certs/%.jks: certs/%.crt
 certs/cacert.jks:
 	yes | keytool -import -file certs/cacert.pem -alias dev-root-ca -keystore certs/cacert.jks -deststorepass "default"
 
-../srv/pillar/secrets/cacert.sls:
+../srv/pillar/secrets/cacert.sls: certs/cacert.pem
 	mkdir -p pillar
 	echo "cacert.crt: |" > $@
 	cat certs/cacert.pem | bin/ws-indent 2 >> $@
